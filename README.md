@@ -236,6 +236,35 @@ The frontend runs on `http://localhost:5173` and automatically proxies API reque
 - **High Availability**: 3-node PostgreSQL cluster
 - **Ingress Routing**: Path-based routing for API and frontend
 
+## Upcoming Features
+
+We're continuously improving Uptimatum. Here are some features planned for future releases:
+
+### 🔐 Authentication & Authorization
+
+- [ ] **Better-Auth Integration**: Secure authentication system using [better-auth](https://www.better-auth.com/)
+  - [ ] User registration and login
+  - [ ] Role-based access control (Admin, Viewer)
+  - [ ] Protected admin routes for status page management
+  - [ ] Public access to status pages without authentication
+  - [ ] Session management and secure token handling
+
+This will enable:
+
+- [ ] **Admin Dashboard**: Secure access to create, edit, and manage status pages
+- [ ] **Public Status Pages**: Unrestricted public access to view status information
+- [ ] **Multi-User Support**: Multiple administrators with different permission levels
+- [ ] **API Security**: Protected API endpoints for management operations
+
+### 📊 Additional Planned Features
+
+- [ ] **Email Notifications**: Alert administrators when endpoints go down
+- [ ] **Webhook Support**: Integrate with Slack, Discord, and other services
+- [ ] **Custom Status Page Themes**: Customizable branding and styling
+- [ ] **Advanced Analytics**: Detailed uptime reports and historical data
+- [ ] **API Rate Limiting**: Protect API endpoints from abuse
+- [ ] **Multi-Language Support**: Internationalization for status pages
+
 ## Demo Script
 
 Run the demo script to showcase all Kubernetes features:
