@@ -4,7 +4,7 @@ metadata:
   name: uptimatum-db
   namespace: uptimatum
 spec:
-  description: "CloudNativePG cluster for Uptimatum"
+  description: "CloudNativePG cluster for Uptimatum - Primary-Replica setup"
   instances: 3
   imageName: ghcr.io/cloudnative-pg/postgresql:17
   storage:
@@ -15,6 +15,12 @@ spec:
       owner: uptimatum
       secret:
         name: uptimatum-db-bootstrap
+  # CloudNativePG automatically creates:
+  # - uptimatum-db-rw: Points to PRIMARY (read-write) - used by backend
+  # - uptimatum-db-ro: Points to REPLICAS (read-only) - for read scaling
+  # - uptimatum-db-r: Points to any replica (read-only)
+  # Architecture: 1 primary (master) + 2 replicas (read-only)
+  # Replicas automatically sync from primary via streaming replication
   monitoring:
     disableDefaultQueries: false
   resources:

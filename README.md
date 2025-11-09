@@ -38,13 +38,13 @@ Internet → Ingress → Frontend (SolidJS) → Backend (Hono) → PostgreSQL (3
 - [x] Multiple Services: frontend-service, backend-service
 - [x] Ingress: Path-based routing
 - [x] ConfigMap + Secret: App config + DB credentials
-- [x] StatefulSet: PostgreSQL HA cluster (3 nodes) via Helm
+- [x] StatefulSet: PostgreSQL HA cluster (1 primary + 2 read-only replicas) via CloudNativePG
 
 ## Tech Stack
 
 - **Frontend**: SolidJS + TypeScript + TailwindCSS
 - **Backend**: Hono + Bun + Drizzle ORM
-- **Database**: PostgreSQL HA (managed by CloudNativePG operator with 3 instances)
+- **Database**: PostgreSQL HA (managed by CloudNativePG operator - 1 primary + 2 read-only replicas)
 - **Infrastructure**: Google Kubernetes Engine (GKE)
 - **Container Registry**: Google Artifact Registry
 
@@ -414,7 +414,7 @@ If you get port conflicts, you can change the ports:
 - ✅ **Ingress**: Nginx Ingress with path-based routing
 - ✅ **ConfigMap**: Application configuration
 - ✅ **Secret**: Database credentials
-- ✅ **StatefulSet**: PostgreSQL HA cluster (3 nodes) via Helm
+- ✅ **CloudNativePG Cluster**: PostgreSQL HA (1 primary + 2 read-only replicas) with automatic failover
 - ✅ **StorageClass**: Managed by CloudNativePG cluster PVCs
 - ✅ **Unique**: Self-hosted status page platform with embeds
 

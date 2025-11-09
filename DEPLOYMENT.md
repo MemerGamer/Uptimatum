@@ -139,6 +139,18 @@ This will:
 - Apply the bootstrap secret and cluster CR to provision a 3-instance PostgreSQL cluster
 - Wait for the cluster to report `Ready`
 
+**Primary-Replica Architecture:**
+
+CloudNativePG automatically sets up a master-replica architecture:
+- **1 Primary (Master)**: Handles all read-write operations
+- **2 Replicas**: Read-only nodes that sync from primary via streaming replication
+- **Automatic Services**:
+  - `uptimatum-db-rw`: Points to PRIMARY (read-write) - used by backend
+  - `uptimatum-db-ro`: Points to REPLICAS (read-only) - for read scaling
+  - `uptimatum-db-r`: Points to any replica (read-only)
+
+If the primary fails, CloudNativePG automatically promotes a replica to primary (automatic failover).
+
 ### Step 7: Build and Deploy Application
 
 ```bash
@@ -178,6 +190,24 @@ uptimatum-db-3               1/1     Running   0          5m
 ```bash
 kubectl get svc -n uptimatum
 ```
+
+Expected services for database:
+- `uptimatum-db-rw`: Read-write service (points to primary)
+- `uptimatum-db-ro`: Read-only service (points to replicas)
+- `uptimatum-db-r`: Read service (points to any replica)
+
+### Verify Primary-Replica Setup
+
+```bash
+# Check which pod is the primary
+kubectl get pods -n uptimatum -l postgresql.cnpg.io/cluster=uptimatum-db \
+  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.labels.postgresql\.cnpg\.io/role}{"\n"}{end}'
+
+# Check cluster status
+kubectl get cluster uptimatum-db -n uptimatum -o yaml | grep -A 5 "status:"
+```
+
+You should see one pod with role `primary` and others with role `replica`.
 
 ### Check Ingress
 

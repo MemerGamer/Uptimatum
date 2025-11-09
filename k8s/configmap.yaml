@@ -4,6 +4,8 @@ metadata:
   name: uptimatum-config
   namespace: uptimatum
 data:
+  # uptimatum-db-rw: Read-write service pointing to PRIMARY (master) node
+  # For read-only queries, use: uptimatum-db-ro (points to replicas)
   DB_HOST: "uptimatum-db-rw"
   DB_PORT: "5432"
   DB_NAME: "uptimatum"
