@@ -1,0 +1,26 @@
+{
+  "name": "uptimatum-frontend",
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.17",
+    "solid-devtools": "^0.34.4",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.2",
+    "vite-plugin-solid": "^2.11.10"
+  },
+  "dependencies": {
+    "@solidjs/router": "^0.15.3",
+    "@types/node": "^24.10.0",
+    "solid-js": "^1.9.10"
+  }
+}
