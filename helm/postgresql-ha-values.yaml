@@ -6,8 +6,7 @@ postgresql:
   database: uptimatum
   username: uptimatum
   password: UptimeSecure2024
-  image:
-    tag: "18"
+  # Use default image from chart (removes invalid tag specification)
   postgresqlMaxConnections: 100
   postgresqlSharedBuffers: 256MB
   postgresqlMaxPreparedTransactions: 0
@@ -16,6 +15,7 @@ postgresql:
 pgpool:
   replicaCount: 2
   adminPassword: UptimeSecure2024
+  # Use default image from chart
 
 # Persistence configuration
 persistence:
