@@ -17,6 +17,7 @@ RUN bun install --frozen-lockfile --production
 
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/drizzle ./drizzle
 
 EXPOSE 3000
 
