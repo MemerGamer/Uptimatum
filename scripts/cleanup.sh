@@ -24,12 +24,14 @@ if [ -z "$PROJECT_ID" ]; then
     gcloud config set project $PROJECT_ID
 fi
 
-echo -e "${YELLOW}⚠️  This will delete ALL Uptimatum resources!${NC}"
+echo -e "${YELLOW}⚠️  This will delete Uptimatum Kubernetes resources!${NC}"
 echo ""
 echo "Resources to be deleted:"
 echo "  - Kubernetes namespace 'uptimatum' (all pods, services, deployments)"
-echo "  - GKE cluster 'uptimatum-cluster'"
-echo "  - Artifact Registry repository 'uptimatum'"
+echo ""
+echo "Resources NOT deleted (preserved):"
+echo "  - GKE cluster 'uptimatum-cluster' (optional, will ask)"
+echo "  - Artifact Registry repository 'uptimatum' (preserved - contains Docker images)"
 echo ""
 read -p "Are you sure you want to continue? (yes/N) " -r
 if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
@@ -38,13 +40,13 @@ if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
 fi
 
 echo ""
-echo -e "${RED}Step 1/3: Deleting Kubernetes resources...${NC}"
+echo -e "${RED}Step 1/2: Deleting Kubernetes resources...${NC}"
 cd "$(dirname "$0")/.."
 kubectl delete namespace uptimatum --ignore-not-found=true || true
 echo "✅ Kubernetes resources deleted"
 
 echo ""
-echo -e "${RED}Step 2/3: Deleting GKE Cluster...${NC}"
+echo -e "${RED}Step 2/2: Deleting GKE Cluster (optional)...${NC}"
 read -p "Delete GKE cluster 'uptimatum-cluster'? (yes/N) " -r
 if [[ $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
     gcloud container clusters delete uptimatum-cluster \
@@ -57,17 +59,10 @@ else
 fi
 
 echo ""
-echo -e "${RED}Step 3/3: Deleting Artifact Registry...${NC}"
-read -p "Delete Artifact Registry repository 'uptimatum'? (yes/N) " -r
-if [[ $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
-    gcloud artifacts repositories delete uptimatum \
-      --location=$REGION \
-      --project=$PROJECT_ID \
-      --quiet || echo "⚠️  Repository may not exist or already deleted"
-    echo "✅ Artifact Registry deleted"
-else
-    echo "Skipping Artifact Registry deletion"
-fi
+echo -e "${GREEN}Step 3/3: Artifact Registry (preserved)...${NC}"
+echo "Artifact Registry repository 'uptimatum' is preserved to keep Docker images."
+echo "To delete it manually, run:"
+echo "  gcloud artifacts repositories delete uptimatum --location=$REGION --project=$PROJECT_ID"
 
 echo ""
 echo -e "${GREEN}✅ Cleanup complete!${NC}"

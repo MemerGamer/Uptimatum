@@ -6,30 +6,37 @@ postgresql:
   database: uptimatum
   username: uptimatum
   password: UptimeSecure2024
-  # Use default image from chart (removes invalid tag specification)
+  # Use chart defaults for images (tested and validated)
   postgresqlMaxConnections: 100
   postgresqlSharedBuffers: 256MB
   postgresqlMaxPreparedTransactions: 0
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
 
 # Pgpool configuration
 pgpool:
   replicaCount: 2
   adminPassword: UptimeSecure2024
-  # Use default image from chart
+  # Use chart defaults for images (tested and validated)
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
 
 # Persistence configuration
 persistence:
   size: 2Gi
   # storageClass: ""  # Use default storage class if not specified
 
-# Resource limits
-resources:
-  requests:
-    memory: "256Mi"
-    cpu: "250m"
-  limits:
-    memory: "512Mi"
-    cpu: "500m"
+# Global resource limits (if needed, but prefer per-component resources above)
 
 # Service configuration
 service:
