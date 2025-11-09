@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-export PROJECT_ID=$(gcloud config get-value project 2>/dev/null || echo "")
+# Get PROJECT_ID from environment variable or gcloud config
+export PROJECT_ID=${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "")}
 export REGION=europe-west1
 export ZONE=${REGION}-b
 export REPO=uptimatum

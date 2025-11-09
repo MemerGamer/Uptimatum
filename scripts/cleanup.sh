@@ -4,7 +4,8 @@ set -e
 # Uptimatum - Complete Cleanup Script
 # This script removes all Uptimatum resources from GCP
 
-export PROJECT_ID=$(gcloud config get-value project 2>/dev/null || echo "")
+# Get PROJECT_ID from environment variable or gcloud config
+export PROJECT_ID=${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "")}
 export ZONE=europe-west1-b
 export REGION=europe-west1
 

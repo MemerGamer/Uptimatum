@@ -1,11 +1,14 @@
 #!/bin/bash
 set -e
 
-export PROJECT_ID=$(gcloud config get-value project 2>/dev/null || echo "")
-export REGION=europe-west1
+# Get PROJECT_ID from environment variable or gcloud config
+export PROJECT_ID=${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "")}
+export REGION=${REGION:-europe-west1}
 
 if [ -z "$PROJECT_ID" ]; then
-    echo "ERROR: No GCP project set. Run: gcloud config set project YOUR_PROJECT_ID"
+    echo "ERROR: No GCP project set."
+    echo "Set it as environment variable: export PROJECT_ID=your-project-id"
+    echo "Or run: gcloud config set project YOUR_PROJECT_ID"
     exit 1
 fi
 
