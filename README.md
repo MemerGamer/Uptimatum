@@ -44,7 +44,7 @@ Internet → Ingress → Frontend (SolidJS) → Backend (Hono) → PostgreSQL (3
 
 - **Frontend**: SolidJS + TypeScript + TailwindCSS
 - **Backend**: Hono + Bun + Drizzle ORM
-- **Database**: PostgreSQL HA (3-node cluster via Bitnami Helm chart)
+- **Database**: PostgreSQL HA (managed by CloudNativePG operator with 3 instances)
 - **Infrastructure**: Google Kubernetes Engine (GKE)
 - **Container Registry**: Google Artifact Registry
 
@@ -415,7 +415,7 @@ If you get port conflicts, you can change the ports:
 - ✅ **ConfigMap**: Application configuration
 - ✅ **Secret**: Database credentials
 - ✅ **StatefulSet**: PostgreSQL HA cluster (3 nodes) via Helm
-- ✅ **StorageClass**: Managed by Bitnami chart
+- ✅ **StorageClass**: Managed by CloudNativePG cluster PVCs
 - ✅ **Unique**: Self-hosted status page platform with embeds
 
 ## Contributing

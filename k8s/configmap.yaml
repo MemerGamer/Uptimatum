@@ -4,7 +4,7 @@ metadata:
   name: uptimatum-config
   namespace: uptimatum
 data:
-  DB_HOST: "postgres-postgresql-ha-pgpool.uptimatum.svc.cluster.local"
+  DB_HOST: "uptimatum-db-rw"
   DB_PORT: "5432"
   DB_NAME: "uptimatum"
   CHECK_INTERVAL: "30"

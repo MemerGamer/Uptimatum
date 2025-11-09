@@ -59,8 +59,8 @@ else
 fi
 
 echo ""
-echo -e "${GREEN}Step 3/3: Artifact Registry (preserved)...${NC}"
-echo "Artifact Registry repository 'uptimatum' is preserved to keep Docker images."
+echo -e "${GREEN}Artifact Registry (preserved)...${NC}"
+echo "Artifact Registry repository 'uptimatum' remains to keep Docker images."
 echo "To delete it manually, run:"
 echo "  gcloud artifacts repositories delete uptimatum --location=$REGION --project=$PROJECT_ID"
 

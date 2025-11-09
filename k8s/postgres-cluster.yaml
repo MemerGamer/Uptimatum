@@ -1,0 +1,27 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: uptimatum-db
+  namespace: uptimatum
+spec:
+  description: "CloudNativePG cluster for Uptimatum"
+  instances: 3
+  imageName: ghcr.io/cloudnative-pg/postgresql:17
+  storage:
+    size: 5Gi
+  bootstrap:
+    initdb:
+      database: uptimatum
+      owner: uptimatum
+      secret:
+        name: uptimatum-db-bootstrap
+  monitoring:
+    disableDefaultQueries: false
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+

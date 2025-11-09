@@ -133,9 +133,11 @@ kubectl wait --namespace ingress-nginx \
 
 This will:
 
-- Add Bitnami Helm repository
-- Create `uptimatum` namespace
-- Deploy PostgreSQL HA cluster (3 nodes)
+- Add the CloudNativePG Helm repository
+- Install/upgrade the CloudNativePG operator (`cnpg` release in `cnpg-system`)
+- Create the `uptimatum` namespace (if missing)
+- Apply the bootstrap secret and cluster CR to provision a 3-instance PostgreSQL cluster
+- Wait for the cluster to report `Ready`
 
 ### Step 7: Build and Deploy Application
 
@@ -166,9 +168,9 @@ Expected output:
 NAME                        READY   STATUS    RESTARTS   AGE
 backend-xxx                  1/1     Running   0          2m
 frontend-xxx                 1/1     Running   0          2m
-postgres-postgresql-ha-0     1/1     Running   0          5m
-postgres-postgresql-ha-1     1/1     Running   0          5m
-postgres-postgresql-ha-2     1/1     Running   0          5m
+uptimatum-db-1               1/1     Running   0          5m
+uptimatum-db-2               1/1     Running   0          5m
+uptimatum-db-3               1/1     Running   0          5m
 ```
 
 ### Check Services
@@ -210,7 +212,7 @@ All scripts are located in the `scripts/` directory:
 | ---------------- | ------------------------------------------------------- |
 | `setup.sh`       | **Master script** - Complete setup from scratch         |
 | `setup-infra.sh` | Setup GCP infrastructure (APIs, Artifact Registry, GKE) |
-| `setup-db.sh`    | Deploy PostgreSQL HA cluster                            |
+| `setup-db.sh`    | Deploy CloudNativePG operator + PostgreSQL cluster      |
 | `deploy.sh`      | Build images and deploy to Kubernetes                   |
 | `cleanup.sh`     | **Master cleanup** - Remove all resources               |
 | `demo.sh`        | Demo presentation script                                |
@@ -265,9 +267,9 @@ gcloud artifacts repositories delete uptimatum \
 - ✅ Deployments: `backend` (3 replicas), `frontend` (2 replicas)
 - ✅ Services: `backend`, `frontend`
 - ✅ Ingress: `uptimatum-ingress`
-- ✅ StatefulSet: `postgres-postgresql-ha` (3 nodes)
+- ✅ CloudNativePG Cluster: `uptimatum-db` (3 instances)
 - ✅ ConfigMap: `uptimatum-config`
-- ✅ Secret: `uptimatum-secret`
+- ✅ Secrets: `uptimatum-secret`, `uptimatum-db-bootstrap`
 
 ### Estimated Costs
 
@@ -318,13 +320,14 @@ kubectl get all -n uptimatum
 
 ```bash
 # Check PostgreSQL pods
-kubectl get pods -n uptimatum | grep postgres
+kubectl get pods -n uptimatum | grep uptimatum-db
 
 # Check PostgreSQL logs
-kubectl logs -n uptimatum postgres-postgresql-ha-0
+kubectl logs -n uptimatum pod/uptimatum-db-1
 
 # Test connection
-kubectl exec -it -n uptimatum postgres-postgresql-ha-0 -- psql -U uptimatum -d uptimatum
+kubectl exec -it -n uptimatum pod/uptimatum-db-1 -- \
+  psql -U uptimatum -d uptimatum -h uptimatum-db-rw
 ```
 
 ### Ingress IP Not Assigned
@@ -399,9 +402,10 @@ Backend environment variables are set via:
 
 ### Database Configuration
 
-PostgreSQL configuration is in:
+PostgreSQL cluster is defined in:
 
-- **Helm Values:** `helm/postgresql-ha-values.yaml`
+- **Cluster Resource:** `k8s/postgres-cluster.yaml`
+- **Bootstrap Secret:** `k8s/db-bootstrap-secret.yaml`
 
 ### Kubernetes Manifests
 

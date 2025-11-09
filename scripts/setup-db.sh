@@ -4,29 +4,41 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "Setting up PostgreSQL cluster..."
+echo "Setting up CloudNativePG PostgreSQL cluster..."
 
-# Add Helm repo
-echo "Adding Bitnami Helm repository..."
-helm repo add bitnami https://charts.bitnami.com/bitnami || true
+# Add Helm repo for CloudNativePG operator
+echo "Adding CloudNativePG Helm repository..."
+helm repo add cnpg https://cloudnative-pg.github.io/charts || true
 helm repo update
 
+# Install / upgrade CloudNativePG operator
+echo "Installing CloudNativePG operator..."
+helm upgrade --install cnpg cnpg/cloudnative-pg \
+  --namespace cnpg-system \
+  --create-namespace \
+  --wait
+
 # Create namespace if it doesn't exist
-echo "Creating namespace..."
+echo "Creating application namespace..."
 kubectl create namespace uptimatum || echo "✅ Namespace already exists"
 
-# Install PostgreSQL HA (3 nodes) using values file
-echo "Installing PostgreSQL HA cluster (this may take a few minutes)..."
-helm install postgres bitnami/postgresql-ha \
-  --namespace uptimatum \
-  --values "$PROJECT_ROOT/helm/postgresql-ha-values.yaml" \
-  --wait || echo "✅ PostgreSQL may already be installed"
+# Apply database bootstrap secret and cluster definition
+echo "Applying CloudNativePG cluster resources..."
+kubectl apply -f "$PROJECT_ROOT/k8s/db-bootstrap-secret.yaml"
+kubectl apply -f "$PROJECT_ROOT/k8s/postgres-cluster.yaml"
 
-# Verify
-echo ""
-echo "Verifying PostgreSQL deployment..."
-kubectl get statefulset,pvc -n uptimatum
+echo "Waiting for CloudNativePG cluster to become ready (this may take a few minutes)..."
+kubectl wait --namespace uptimatum \
+  --for=condition=Ready \
+  cluster/uptimatum-db \
+  --timeout=600s || echo "⚠️  Cluster readiness check timed out, verify manually with: kubectl get pods -n uptimatum"
+
+# Additional safety: wait for pods to report ready
+kubectl wait --namespace uptimatum \
+  --for=condition=Ready \
+  pod -l postgresql.cnpg.io/cluster=uptimatum-db \
+  --timeout=600s || echo "⚠️  Pods are still starting, check status with: kubectl get pods -n uptimatum"
 
 echo ""
-echo "✅ PostgreSQL cluster ready!"
+echo "✅ CloudNativePG cluster ready!"
 
