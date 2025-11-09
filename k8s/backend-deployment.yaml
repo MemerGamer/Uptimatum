@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: uptimatum
+  labels:
+    app: backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: europe-west1-docker.pkg.dev/PROJECT_ID/uptimatum/backend:v1
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: uptimatum-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: uptimatum-config
+              key: DB_PORT
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: uptimatum-config
+              key: DB_NAME
+        - name: CHECK_INTERVAL
+          valueFrom:
+            configMapKeyRef:
+              name: uptimatum-config
+              key: CHECK_INTERVAL
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: uptimatum-config
+              key: PORT
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: uptimatum-secret
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: uptimatum-secret
+              key: DB_PASSWORD
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+
