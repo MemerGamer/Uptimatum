@@ -6,7 +6,10 @@ postgresql:
   database: uptimatum
   username: uptimatum
   password: UptimeSecure2024
-  # Use chart defaults for images (tested and validated)
+  image:
+    registry: docker.io
+    repository: bitnami/postgresql-repmgr
+    tag: "latest"
   postgresqlMaxConnections: 100
   postgresqlSharedBuffers: 256MB
   postgresqlMaxPreparedTransactions: 0
@@ -22,7 +25,10 @@ postgresql:
 pgpool:
   replicaCount: 2
   adminPassword: UptimeSecure2024
-  # Use chart defaults for images (tested and validated)
+  image:
+    registry: docker.io
+    repository: bitnami/pgpool
+    tag: "latest"
   resources:
     requests:
       memory: "128Mi"
