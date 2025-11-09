@@ -49,7 +49,7 @@ gcloud container clusters get-credentials uptimatum-cluster --zone=$ZONE --proje
 
 # Install Nginx Ingress
 echo "Installing Nginx Ingress Controller..."
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml || true
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.14.0/deploy/static/provider/cloud/deploy.yaml || true
 
 # Wait for ingress
 echo "Waiting for Ingress Controller to be ready..."

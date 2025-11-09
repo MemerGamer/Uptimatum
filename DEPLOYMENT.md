@@ -116,7 +116,7 @@ gcloud container clusters get-credentials uptimatum-cluster --zone=$ZONE
 ### Step 5: Install Nginx Ingress Controller
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.14.0/deploy/static/provider/cloud/deploy.yaml
 
 # Wait for ingress to be ready
 kubectl wait --namespace ingress-nginx \

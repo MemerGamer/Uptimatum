@@ -98,7 +98,7 @@ echo "✅ GKE cluster ready"
 
 echo ""
 echo -e "${GREEN}Step 4/5: Installing Nginx Ingress Controller...${NC}"
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml || true
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.14.0/deploy/static/provider/cloud/deploy.yaml || true
 
 # Wait for ingress to be ready
 echo "Waiting for Ingress Controller..."
