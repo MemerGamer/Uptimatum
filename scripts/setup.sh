@@ -65,12 +65,36 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo -e "${GREEN}Step 1/5: Enabling GCP APIs...${NC}"
-gcloud services enable container.googleapis.com artifactregistry.googleapis.com || true
+echo -e "${GREEN}Step 1/6: Enabling GCP APIs...${NC}"
+gcloud services enable container.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com || true
 echo "✅ APIs enabled"
 
+# Grant Cloud Build permissions
+echo "Granting Cloud Build permissions..."
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+CLOUD_BUILD_SA="${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+CURRENT_USER=$(gcloud config get-value account)
+
+# Grant Cloud Build Service Account necessary roles
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${CLOUD_BUILD_SA}" \
+  --role="roles/artifactregistry.writer" || true
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${CLOUD_BUILD_SA}" \
+  --role="roles/container.developer" || true
+
+# Grant current user Cloud Build Editor role (needed to submit builds)
+if [ -n "$CURRENT_USER" ]; then
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="user:${CURRENT_USER}" \
+    --role="roles/cloudbuild.builds.editor" || true
+fi
+
+echo "✅ Cloud Build permissions granted"
+
 echo ""
-echo -e "${GREEN}Step 2/5: Creating Artifact Registry...${NC}"
+echo -e "${GREEN}Step 2/6: Creating Artifact Registry...${NC}"
 gcloud artifacts repositories create $REPO \
   --repository-format=docker \
   --location=$REGION \
@@ -81,7 +105,7 @@ gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet || true
 echo "✅ Artifact Registry ready"
 
 echo ""
-echo -e "${GREEN}Step 3/5: Creating GKE Cluster...${NC}"
+echo -e "${GREEN}Step 3/6: Creating GKE Cluster...${NC}"
 echo "This may take 5-10 minutes..."
 gcloud container clusters create uptimatum-cluster \
   --zone=$ZONE \
@@ -97,7 +121,7 @@ gcloud container clusters get-credentials uptimatum-cluster --zone=$ZONE --proje
 echo "✅ GKE cluster ready"
 
 echo ""
-echo -e "${GREEN}Step 4/5: Installing Nginx Ingress Controller...${NC}"
+echo -e "${GREEN}Step 4/6: Installing Nginx Ingress Controller...${NC}"
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.14.0/deploy/static/provider/cloud/deploy.yaml || true
 
 # Wait for ingress to be ready
@@ -109,7 +133,7 @@ kubectl wait --namespace ingress-nginx \
 echo "✅ Ingress Controller installed"
 
 echo ""
-echo -e "${GREEN}Step 5/5: Setting up Database...${NC}"
+echo -e "${GREEN}Step 5/6: Setting up Database...${NC}"
 cd "$(dirname "$0")/.."
 ./scripts/setup-db.sh
 echo "✅ Database ready"
