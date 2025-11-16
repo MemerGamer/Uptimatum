@@ -192,7 +192,7 @@ Bitnami PostgreSQL Helm chart sets up a master-replica architecture using Statef
 - **1 Primary (Master) StatefulSet**: Handles all read-write operations with RWO storage
 - **2 Read Replicas StatefulSet**: Read-only nodes that sync from primary via streaming replication with RWO storage
 - **Services**:
-  - `uptimatum-db-postgresql`: Points to PRIMARY (read-write) - used by backend
+  - `uptimatum-db-postgresql-primary`: Points to PRIMARY (read-write) - used by backend
   - `uptimatum-db-postgresql-read`: Points to READ REPLICAS (read-only) - for read scaling
 
 Each StatefulSet pod has its own PersistentVolumeClaim for data persistence.
@@ -226,7 +226,7 @@ Expected output:
 NAME                                    READY   STATUS    RESTARTS   AGE
 backend-xxx                              1/1     Running   0          2m
 frontend-xxx                             1/1     Running   0          2m
-uptimatum-db-postgresql-0                1/1     Running   0          5m
+uptimatum-db-postgresql-primary-0        1/1     Running   0          5m
 uptimatum-db-postgresql-read-0           1/1     Running   0          5m
 uptimatum-db-postgresql-read-1           1/1     Running   0          5m
 ```
@@ -239,7 +239,7 @@ kubectl get svc -n uptimatum
 
 Expected services for database:
 
-- `uptimatum-db-postgresql`: Read-write service (points to primary StatefulSet)
+- `uptimatum-db-postgresql-primary`: Read-write service (points to primary StatefulSet)
 - `uptimatum-db-postgresql-read`: Read-only service (points to read replica StatefulSet)
 
 ### Verify Primary-Replica Setup
@@ -349,7 +349,7 @@ gcloud artifacts repositories delete uptimatum \
 - Deployments: `backend` (3 replicas), `frontend` (2 replicas)
 - Services: `backend`, `frontend`
 - Ingress: `uptimatum-ingress`
-- PostgreSQL StatefulSets: `uptimatum-db-postgresql` (1 primary) + `uptimatum-db-postgresql-read` (2 replicas)
+- PostgreSQL StatefulSets: `uptimatum-db-postgresql-primary` (1 primary) + `uptimatum-db-postgresql-read` (2 replicas)
 - ConfigMap: `uptimatum-config`
 - Secrets: `uptimatum-secret` (database credentials managed by Helm)
 
@@ -405,14 +405,14 @@ kubectl get all -n uptimatum
 kubectl get pods -n uptimatum | grep uptimatum-db
 
 # Check PostgreSQL logs (primary)
-kubectl logs -n uptimatum pod/uptimatum-db-postgresql-0
+kubectl logs -n uptimatum pod/uptimatum-db-postgresql-primary-0
 
 # Check PostgreSQL logs (read replica)
 kubectl logs -n uptimatum pod/uptimatum-db-postgresql-read-0
 
 # Test connection to primary
-kubectl exec -it -n uptimatum pod/uptimatum-db-postgresql-0 -- \
-  psql -U uptimatum -d uptimatum -h uptimatum-db-postgresql
+kubectl exec -it -n uptimatum pod/uptimatum-db-postgresql-primary-0 -- \
+  psql -U uptimatum -d uptimatum -h uptimatum-db-postgresql-primary
 ```
 
 ### Ingress IP Not Assigned

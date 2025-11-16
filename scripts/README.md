@@ -72,7 +72,7 @@ Deploys PostgreSQL HA cluster using Bitnami PostgreSQL Helm chart:
 - 1 primary (master) StatefulSet with RWO storage
 - 2 read replica StatefulSets with RWO storage
 - Total: 3 nodes using StatefulSets (meets Kubernetes exam requirements)
-- Creates services: `uptimatum-db-postgresql` (primary) and `uptimatum-db-postgresql-read` (replicas)
+- Creates services: `uptimatum-db-postgresql-primary` (primary) and `uptimatum-db-postgresql-read` (replicas)
 
 ### `deploy.sh`
 
