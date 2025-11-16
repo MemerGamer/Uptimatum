@@ -1,4 +1,3 @@
-import { serve } from "@hono/node-server";
 import { env } from "./env.js";
 import app from "./app.js";
 import { initDB } from "./db/index.js";
@@ -10,7 +9,10 @@ async function main() {
   await startChecker();
 
   const port = parseInt(env.PORT);
-  serve({ fetch: app.fetch, port });
+  Bun.serve({
+    fetch: app.fetch,
+    port,
+  });
   logger.info({ port }, `🚀 Uptimatum API running on port ${port}`);
 }
 
