@@ -24,8 +24,8 @@ A complete Kubernetes-based microservices application for monitoring endpoint up
   - [Documentation](#documentation)
   - [Architecture](#architecture)
     - [System Architecture](#system-architecture)
-    - [Backend Project Structure](#backend-project-structure)
-    - [Frontend Project Structure](#frontend-project-structure)
+    - [Backend Project Technologies](#backend-project-technologies)
+    - [Frontend Project Technologies](#frontend-project-technologies)
     - [Database Schema](#database-schema)
   - [Tech Stack](#tech-stack)
   - [Quick Start](#quick-start)
@@ -172,13 +172,13 @@ graph TB
     style ArtifactReg fill:#14b8a6,stroke:#0d9488,stroke-width:2px,color:#fff
 ```
 
-### Backend Project Structure
+### Backend Project Technologies
 
-![Backend Structure](diagrams/uptimatum-backend.png)
+![Backend Technologies](diagrams/uptimatum-backend.png)
 
-### Frontend Project Structure
+### Frontend Project Technologies
 
-![Frontend Structure](diagrams/uptimatum-frontend.png)
+![Frontend Technologies](diagrams/uptimatum-frontend.png)
 
 ### Database Schema
 
