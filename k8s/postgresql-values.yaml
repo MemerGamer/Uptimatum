@@ -2,6 +2,9 @@
 # This creates a PostgreSQL cluster with 1 primary (master) + 2 read replicas
 # Total: 3 nodes using StatefulSets
 
+# Architecture: Set to replication to enable read replicas
+architecture: replication
+
 # Global PostgreSQL Authentication
 global:
   postgresql:
@@ -37,6 +40,7 @@ primary:
 # This creates 2 read replicas, giving you 3 total nodes (1 primary + 2 replicas)
 # Note: Read replicas also use RWO because they write WAL files and maintain their own data
 readReplicas:
+  enabled: true
   replicaCount: 2
   persistence:
     enabled: true
