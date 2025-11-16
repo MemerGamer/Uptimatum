@@ -60,7 +60,7 @@ async function checkEndpoint(endpoint: Endpoint) {
             responseTime: latestCheckResult[0].response_time as number | null,
             statusCode: latestCheckResult[0].status_code as number | null,
             error: latestCheckResult[0].error as string | null,
-            checkedAt: latestCheckResult[0].checked_at as Date,
+            checkedAt: new Date(latestCheckResult[0].checked_at as string | Date),
           }
         : null;
 
@@ -77,7 +77,7 @@ async function checkEndpoint(endpoint: Endpoint) {
       // Insert new row if status changed or threshold passed
       await sqlTransaction`
         INSERT INTO checks (endpoint_id, status, response_time, status_code, error, checked_at)
-        VALUES (${endpoint.id}, ${status}, ${responseTime}, ${statusCode}, ${error}, ${now})
+        VALUES (${endpoint.id}, ${status}, ${responseTime}, ${statusCode}, ${error}, ${now.toISOString()})
       `;
 
       logger.info(
@@ -94,7 +94,7 @@ async function checkEndpoint(endpoint: Endpoint) {
       // This prevents duplicate writes from parallel instances
       await sqlTransaction`
         UPDATE checks
-        SET checked_at = ${now},
+        SET checked_at = ${now.toISOString()},
             response_time = ${responseTime},
             status_code = ${statusCode},
             error = ${error}
