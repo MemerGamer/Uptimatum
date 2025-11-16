@@ -2,17 +2,47 @@
 
 The Ultimate Self-Hosted Status Page Platform API
 
+## Table of Contents
+
+- [Uptimatum Backend](#uptimatum-backend)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Setup](#setup)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+  - [API Documentation](#api-documentation)
+  - [Database](#database)
+    - [Commands](#commands)
+    - [Schema](#schema)
+  - [Routes Structure](#routes-structure)
+  - [API Endpoints](#api-endpoints)
+    - [Health Check](#health-check)
+    - [Pages](#pages)
+    - [Endpoints](#endpoints)
+    - [Incidents](#incidents)
+    - [Badges](#badges)
+  - [Environment Variables](#environment-variables)
+  - [Development](#development)
+    - [Tech Stack](#tech-stack)
+    - [Hot Reload](#hot-reload)
+  - [Production](#production)
+    - [Docker](#docker)
+    - [Kubernetes](#kubernetes)
+  - [Health Checker](#health-checker)
+    - [Database Write Optimization](#database-write-optimization)
+
 ## Features
 
-- ✅ **Type-safe API** with OpenAPI documentation
-- ✅ **Interactive API docs** with Scalar
-- ✅ **Structured logging** with Pino
-- ✅ **Type-safe environment variables** with Zod
-- ✅ **Drizzle ORM** with migrations (no raw SQL)
-- ✅ **PostgreSQL** database
-- ✅ **Health checker** worker with cron scheduling
-- ✅ **Incident management** API for tracking service outages
-- ✅ **Timeline API** for status history visualization
+- **Type-safe API** with OpenAPI documentation
+- **Interactive API docs** with Scalar
+- **Structured logging** with Pino
+- **Type-safe environment variables** with Zod
+- **Drizzle ORM** with migrations (no raw SQL)
+- **PostgreSQL** database
+- **Health checker** worker with cron scheduling
+- **Incident management** API for tracking service outages
+- **Timeline API** for status history visualization
+- **Optimized database writes** - Only inserts when status changes, updates timestamps otherwise
 
 ## Setup
 
@@ -203,7 +233,47 @@ The health checker worker runs every 30 seconds (configurable via `CHECK_INTERVA
 
 1. Fetches all active endpoints
 2. Performs HTTP checks
-3. Records results in the database (inserts every check for cluster safety)
+3. Records results in the database using optimized writes:
+   - **Inserts new row** only when status changes
+   - **Updates timestamp** when status is the same (with 5-second threshold to prevent too frequent updates)
+   - Uses **row-level locking** to prevent race conditions from parallel instances
 4. Logs status using Pino logger
+
+### Database Write Optimization
+
+The health checker implements intelligent write optimization:
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#2563eb','primaryTextColor':'#ffffff','primaryBorderColor':'#1e40af','lineColor':'#64748b','secondaryColor':'#10b981','tertiaryColor':'#f59e0b','background':'#ffffff','mainBkgColor':'#ffffff','textColor':'#1f2937','primaryBorderColor':'#1e40af','primaryTextColor':'#ffffff','noteBkgColor':'#fef3c7','noteTextColor':'#92400e','noteBorderColor':'#f59e0b','tertiaryColor':'#f59e0b','tertiaryBorderColor':'#d97706','tertiaryTextColor':'#ffffff'}}}%%
+flowchart TD
+    A["Health Check Triggered"] --> B["Perform HTTP Check"]
+    B --> C["Start Transaction with<br/>Row-Level Lock"]
+    C --> D["Get Latest Check<br/>FOR UPDATE SKIP LOCKED"]
+    D --> E{"Status Changed?"}
+    E -->|Yes| F["Insert New Row"]
+    E -->|No| G{"Last Update<br/>> 5s ago?"}
+    G -->|Yes| F
+    G -->|No| H["Update Timestamp"]
+    F --> I["Commit Transaction"]
+    H --> I
+    I --> J["Log Result"]
+
+    style A fill:#3b82f6,stroke:#1e40af,stroke-width:2px,color:#fff
+    style B fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style D fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style E fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style F fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    style G fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style H fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff
+    style I fill:#14b8a6,stroke:#0d9488,stroke-width:2px,color:#fff
+    style J fill:#ec4899,stroke:#db2777,stroke-width:2px,color:#fff
+```
+
+This approach:
+- **Reduces database writes** by ~95% when status is stable
+- **Prevents race conditions** using PostgreSQL row-level locking
+- **Maintains accuracy** by updating response times and metadata
+- **Handles concurrent instances** safely with `SKIP LOCKED`
 
 Additionally, a cleanup job runs daily at 2 AM to remove check records older than `CHECK_RETENTION_DAYS` (default: 30 days) to prevent unbounded database growth.

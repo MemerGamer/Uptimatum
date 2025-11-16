@@ -4,6 +4,52 @@
 
 This guide walks you through deploying Uptimatum on Google Kubernetes Engine (GKE) from scratch.
 
+## Table of Contents
+
+- [Uptimatum - Complete Deployment Guide](#uptimatum---complete-deployment-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Quick Start (Automated)](#quick-start-automated)
+    - [Option 1: Complete Setup (Recommended)](#option-1-complete-setup-recommended)
+  - [Step-by-Step Manual Setup](#step-by-step-manual-setup)
+    - [Step 1: Configure GCP Project](#step-1-configure-gcp-project)
+    - [Step 2: Enable Required APIs](#step-2-enable-required-apis)
+    - [Step 3: Create Artifact Registry](#step-3-create-artifact-registry)
+    - [Step 4: Create GKE Cluster](#step-4-create-gke-cluster)
+    - [Step 5: Install Nginx Ingress Controller](#step-5-install-nginx-ingress-controller)
+    - [Step 6: Setup PostgreSQL Database](#step-6-setup-postgresql-database)
+    - [Step 7: Build and Deploy Application](#step-7-build-and-deploy-application)
+  - [Verify Deployment](#verify-deployment)
+    - [Check Pods](#check-pods)
+    - [Check Services](#check-services)
+    - [Verify Primary-Replica Setup](#verify-primary-replica-setup)
+    - [Check Ingress](#check-ingress)
+    - [Access Application](#access-application)
+  - [Individual Scripts](#individual-scripts)
+  - [Cleanup (Remove Everything)](#cleanup-remove-everything)
+    - [Option 1: Complete Cleanup (Recommended)](#option-1-complete-cleanup-recommended)
+    - [Option 2: Manual Cleanup](#option-2-manual-cleanup)
+  - [Resource Overview](#resource-overview)
+    - [What Gets Created](#what-gets-created)
+    - [Estimated Costs](#estimated-costs)
+  - [Troubleshooting](#troubleshooting)
+    - [Cluster Creation Fails](#cluster-creation-fails)
+    - [Pods Not Starting](#pods-not-starting)
+    - [Database Connection Issues](#database-connection-issues)
+    - [Ingress IP Not Assigned](#ingress-ip-not-assigned)
+    - [Image Build Fails](#image-build-fails)
+  - [Updating the Application](#updating-the-application)
+    - [Rebuild and Redeploy](#rebuild-and-redeploy)
+    - [Rolling Update](#rolling-update)
+    - [Scale Deployments](#scale-deployments)
+  - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
+    - [Database Configuration](#database-configuration)
+    - [Kubernetes Manifests](#kubernetes-manifests)
+  - [Next Steps](#next-steps)
+  - [Additional Resources](#additional-resources)
+  - [Quick Reference](#quick-reference)
+
 ---
 
 ## Prerequisites
@@ -46,18 +92,18 @@ Run the master setup script to deploy everything:
 
 This script will:
 
-1. ✅ Enable required GCP APIs
-2. ✅ Create Artifact Registry
-3. ✅ Create GKE cluster
-4. ✅ Install Nginx Ingress
-5. ✅ Setup PostgreSQL database
-6. ✅ Build and deploy application
+1. Enable required GCP APIs
+2. Create Artifact Registry
+3. Create GKE cluster
+4. Install Nginx Ingress
+5. Setup PostgreSQL database
+6. Build and deploy application
 
 **Time:** ~15-20 minutes
 
 ---
 
-## 📖 Step-by-Step Manual Setup
+## Step-by-Step Manual Setup
 
 If you prefer to run each step manually:
 
@@ -142,6 +188,7 @@ This will:
 **Primary-Replica Architecture:**
 
 Bitnami PostgreSQL Helm chart sets up a master-replica architecture using StatefulSets:
+
 - **1 Primary (Master) StatefulSet**: Handles all read-write operations with RWO storage
 - **2 Read Replicas StatefulSet**: Read-only nodes that sync from primary via streaming replication with RWO storage
 - **Services**:
@@ -177,9 +224,9 @@ Expected output:
 
 ```
 NAME                                    READY   STATUS    RESTARTS   AGE
-backend-xxx                             1/1     Running   0          2m
-frontend-xxx                            1/1     Running   0          2m
-uptimatum-db-postgresql-0               1/1     Running   0          5m
+backend-xxx                              1/1     Running   0          2m
+frontend-xxx                             1/1     Running   0          2m
+uptimatum-db-postgresql-0                1/1     Running   0          5m
 uptimatum-db-postgresql-read-0           1/1     Running   0          5m
 uptimatum-db-postgresql-read-1           1/1     Running   0          5m
 ```
@@ -191,6 +238,7 @@ kubectl get svc -n uptimatum
 ```
 
 Expected services for database:
+
 - `uptimatum-db-postgresql`: Read-write service (points to primary StatefulSet)
 - `uptimatum-db-postgresql-read`: Read-only service (points to read replica StatefulSet)
 
@@ -208,6 +256,7 @@ kubectl get pvc -n uptimatum
 ```
 
 You should see:
+
 - 1 StatefulSet for primary (1 pod)
 - 1 StatefulSet for read replicas (2 pods)
 - 3 PersistentVolumeClaims (one for each pod)
@@ -245,7 +294,7 @@ All scripts are located in the `scripts/` directory:
 | ---------------- | ------------------------------------------------------- |
 | `setup.sh`       | **Master script** - Complete setup from scratch         |
 | `setup-infra.sh` | Setup GCP infrastructure (APIs, Artifact Registry, GKE) |
-| `setup-db.sh`    | Deploy Bitnami PostgreSQL cluster with StatefulSets    |
+| `setup-db.sh`    | Deploy Bitnami PostgreSQL cluster with StatefulSets     |
 | `deploy.sh`      | Build images and deploy to Kubernetes                   |
 | `cleanup.sh`     | **Master cleanup** - Remove all resources               |
 | `demo.sh`        | Demo presentation script                                |
@@ -290,19 +339,19 @@ gcloud artifacts repositories delete uptimatum \
 
 **GCP Resources:**
 
-- ✅ GKE Cluster (`uptimatum-cluster`)
-- ✅ Artifact Registry (`uptimatum`)
-- ✅ Load Balancer (via Ingress)
+- GKE Cluster (`uptimatum-cluster`)
+- Artifact Registry (`uptimatum`)
+- Load Balancer (via Ingress)
 
 **Kubernetes Resources:**
 
-- ✅ Namespace: `uptimatum`
-- ✅ Deployments: `backend` (3 replicas), `frontend` (2 replicas)
-- ✅ Services: `backend`, `frontend`
-- ✅ Ingress: `uptimatum-ingress`
-- ✅ PostgreSQL StatefulSets: `uptimatum-db-postgresql` (1 primary) + `uptimatum-db-postgresql-read` (2 replicas)
-- ✅ ConfigMap: `uptimatum-config`
-- ✅ Secrets: `uptimatum-secret` (database credentials managed by Helm)
+- Namespace: `uptimatum`
+- Deployments: `backend` (3 replicas), `frontend` (2 replicas)
+- Services: `backend`, `frontend`
+- Ingress: `uptimatum-ingress`
+- PostgreSQL StatefulSets: `uptimatum-db-postgresql` (1 primary) + `uptimatum-db-postgresql-read` (2 replicas)
+- ConfigMap: `uptimatum-config`
+- Secrets: `uptimatum-secret` (database credentials managed by Helm)
 
 ### Estimated Costs
 
@@ -394,7 +443,7 @@ gcloud auth configure-docker europe-west1-docker.pkg.dev
 
 ---
 
-## 🔄 Updating the Application
+## Updating the Application
 
 ### Rebuild and Redeploy
 
@@ -455,15 +504,15 @@ All Kubernetes resources are in:
 
 After successful deployment:
 
-1. ✅ **Access the application** using the external IP
-2. ✅ **Test all endpoints** (dashboard, status pages, API docs)
-3. ✅ **Monitor resources** with `kubectl get all -n uptimatum`
-4. ✅ **Set up monitoring** (optional: Prometheus, Grafana)
-5. ✅ **Configure custom domain** (optional: update Ingress)
+1. **Access the application** using the external IP
+2. **Test all endpoints** (dashboard, status pages, API docs)
+3. **Monitor resources** with `kubectl get all -n uptimatum`
+4. **Set up monitoring** (optional: Prometheus, Grafana)
+5. **Configure custom domain** (optional: update Ingress)
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [GKE Documentation](https://cloud.google.com/kubernetes-engine/docs)
 - [Artifact Registry Documentation](https://cloud.google.com/artifact-registry/docs)

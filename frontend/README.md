@@ -2,14 +2,39 @@
 
 The Ultimate Self-Hosted Status Page Platform - Frontend
 
+## Table of Contents
+
+- [Uptimatum Frontend](#uptimatum-frontend)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Setup](#setup)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+  - [Development](#development)
+    - [Scripts](#scripts)
+    - [API Proxy](#api-proxy)
+    - [API Service](#api-service)
+  - [Production](#production)
+    - [Building](#building)
+    - [Docker](#docker)
+    - [Kubernetes](#kubernetes)
+  - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
+  - [Features](#features-1)
+    - [Dashboard](#dashboard)
+    - [Status Page](#status-page)
+    - [Embed Widget](#embed-widget)
+  - [Integration with Backend](#integration-with-backend)
+
 ## Features
 
-- ✅ **SolidJS** - Reactive UI framework
-- ✅ **TypeScript** - Type-safe development
-- ✅ **TailwindCSS** - Utility-first CSS framework
-- ✅ **Solid Router** - Client-side routing
-- ✅ **Real-time Updates** - Auto-refresh every 30 seconds
-- ✅ **Responsive Design** - Works on all devices
+- **SolidJS** - Reactive UI framework
+- **TypeScript** - Type-safe development
+- **TailwindCSS** - Utility-first CSS framework
+- **Solid Router** - Client-side routing
+- **Real-time Updates** - Auto-refresh every 30 seconds
+- **Responsive Design** - Works on all devices
+- **Dark Mode** - Automatic theme switching
 
 ## Setup
 
@@ -27,7 +52,7 @@ source ~/.nvm/nvm.sh && nvm use
 bun install
 ```
 
-1. Create `.env` file:
+2. Create `.env` file:
 
 ```bash
 cp .env.example .env
@@ -81,10 +106,10 @@ const badgeUrl = api.badge.getBadgeUrl("demo");
 
 This provides:
 
-- ✅ Type-safe API calls
-- ✅ Centralized error handling
-- ✅ Consistent request/response handling
-- ✅ Easy to mock for testing
+- Type-safe API calls
+- Centralized error handling
+- Consistent request/response handling
+- Easy to mock for testing
 
 ## Production
 

@@ -2,6 +2,22 @@
 
 This directory contains all deployment and management scripts for Uptimatum.
 
+## Table of Contents
+
+- [Scripts Directory](#scripts-directory)
+  - [Table of Contents](#table-of-contents)
+  - [Master Scripts](#master-scripts)
+    - [`setup.sh` - Complete Setup (0 → Running App)](#setupsh---complete-setup-0--running-app)
+    - [`cleanup.sh` - Complete Cleanup (Running App → 0)](#cleanupsh---complete-cleanup-running-app--0)
+  - [Individual Scripts](#individual-scripts)
+    - [`setup-infra.sh`](#setup-infrash)
+    - [`setup-db.sh`](#setup-dbsh)
+    - [`deploy.sh`](#deploysh)
+    - [`demo.sh`](#demosh)
+    - [`test-local.sh`](#test-localsh)
+    - [`docker-registry.sh`](#docker-registrysh)
+  - [Usage](#usage)
+
 ## Master Scripts
 
 ### `setup.sh` - Complete Setup (0 → Running App)
@@ -18,7 +34,7 @@ Sets up:
 - Artifact Registry
 - GKE Cluster
 - Nginx Ingress
-- PostgreSQL Database
+- PostgreSQL Database (Bitnami Helm chart with StatefulSets)
 - Application Deployment
 
 **Time:** ~15-20 minutes
@@ -33,6 +49,7 @@ Sets up:
 
 Removes:
 
+- PostgreSQL Helm release
 - Kubernetes resources
 - GKE Cluster (optional)
 - Artifact Registry (optional)
@@ -51,9 +68,11 @@ Sets up GCP infrastructure:
 ### `setup-db.sh`
 
 Deploys PostgreSQL HA cluster using Bitnami PostgreSQL Helm chart:
+
 - 1 primary (master) StatefulSet with RWO storage
 - 2 read replica StatefulSets with RWO storage
 - Total: 3 nodes using StatefulSets (meets Kubernetes exam requirements)
+- Creates services: `uptimatum-db-postgresql` (primary) and `uptimatum-db-postgresql-read` (replicas)
 
 ### `deploy.sh`
 
@@ -62,11 +81,18 @@ Builds Docker images and deploys to Kubernetes:
 - Builds backend image
 - Builds frontend image
 - Pushes to Artifact Registry
-- Deploys to Kubernetes
+- Deploys to Kubernetes (excludes Helm values files and namespace from kubectl apply)
 
 ### `demo.sh`
 
-Demo presentation script for showcasing Kubernetes features.
+Demo presentation script for showcasing Kubernetes features:
+
+- Shows pods distribution
+- Displays StatefulSets and PersistentVolumeClaims
+- Shows ConfigMap/Secret usage
+- Gets Ingress IP
+- Demonstrates scaling
+- Shows rolling update commands
 
 ### `test-local.sh`
 

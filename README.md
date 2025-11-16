@@ -14,6 +14,57 @@ A complete Kubernetes-based microservices application for monitoring endpoint up
 
 ![Uptimatum Public Status Page](ui_showcase/uptimatum_public_demo.png)
 
+## Table of Contents
+
+- [Uptimatum](#uptimatum)
+  - [Screenshots](#screenshots)
+    - [Dashboard](#dashboard)
+    - [Public Status Page](#public-status-page)
+  - [Table of Contents](#table-of-contents)
+  - [Documentation](#documentation)
+  - [Architecture](#architecture)
+    - [System Architecture](#system-architecture)
+    - [Backend Project Structure](#backend-project-structure)
+    - [Frontend Project Structure](#frontend-project-structure)
+    - [Database Schema](#database-schema)
+  - [Tech Stack](#tech-stack)
+  - [Quick Start](#quick-start)
+    - [Prerequisites](#prerequisites)
+    - [Option 1: Automated Setup (Recommended)](#option-1-automated-setup-recommended)
+    - [Option 2: Manual Setup](#option-2-manual-setup)
+    - [Access the Application](#access-the-application)
+    - [Cleanup](#cleanup)
+  - [Local Testing](#local-testing)
+  - [Development](#development)
+    - [Prerequisites](#prerequisites-1)
+    - [Quick Test](#quick-test)
+    - [Backend Setup](#backend-setup)
+    - [Frontend Setup](#frontend-setup)
+  - [Features](#features)
+    - [Core Features](#core-features)
+    - [Kubernetes Features](#kubernetes-features)
+  - [Upcoming Features](#upcoming-features)
+    - [Infrastructure \& Architecture](#infrastructure--architecture)
+    - [Authentication \& Authorization](#authentication--authorization)
+    - [Additional Planned Features](#additional-planned-features)
+  - [Demo Script](#demo-script)
+  - [API Endpoints](#api-endpoints)
+    - [Health Check](#health-check)
+    - [Pages](#pages)
+    - [Endpoints](#endpoints)
+    - [Incidents](#incidents)
+    - [Badges](#badges)
+  - [Configuration](#configuration)
+    - [Environment Variables](#environment-variables)
+  - [Troubleshooting](#troubleshooting)
+    - [Port Conflicts](#port-conflicts)
+    - [Database Connection Issues](#database-connection-issues)
+    - [Frontend Can't Connect to Backend](#frontend-cant-connect-to-backend)
+    - [Kubernetes Deployment Issues](#kubernetes-deployment-issues)
+  - [Requirements Checklist](#requirements-checklist)
+  - [Contributing](#contributing)
+  - [Star History](#star-history)
+
 ## Documentation
 
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide (GCP setup from scratch)
@@ -21,16 +72,117 @@ A complete Kubernetes-based microservices application for monitoring endpoint up
 - **[DOCKER.md](./DOCKER.md)** - Docker and Artifact Registry guide
 - **[backend/README.md](./backend/README.md)** - Backend API documentation
 - **[frontend/README.md](./frontend/README.md)** - Frontend development guide
+- **[scripts/README.md](./scripts/README.md)** - Deployment scripts documentation
 - **[ui_showcase/README.md](./ui_showcase/README.md)** - UI screenshots and showcase
 
 ## Architecture
 
-```plaintext
-Internet → Ingress → Frontend (SolidJS) → Backend (Hono) → PostgreSQL (3 nodes)
+### System Architecture
 
-                           ↓
-                    Health Checker Worker
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#2563eb','primaryTextColor':'#ffffff','primaryBorderColor':'#1e40af','lineColor':'#64748b','secondaryColor':'#10b981','tertiaryColor':'#f59e0b','background':'#ffffff','mainBkgColor':'#ffffff','textColor':'#1f2937'}}}%%
+graph TB
+    subgraph Internet["Internet"]
+        User[Users]
+    end
+
+    subgraph GKE["GKE Cluster"]
+        subgraph IngressLayer["Ingress Layer"]
+            Ingress["Nginx Ingress Controller"]
+        end
+
+        subgraph AppLayer["Application Layer"]
+            subgraph FrontendDeploy["Frontend Deployment"]
+                FE1["Frontend Pod 1"]
+                FE2["Frontend Pod 2"]
+            end
+            FrontendSvc["Frontend Service"]
+
+            subgraph BackendDeploy["Backend Deployment"]
+                BE1["Backend Pod 1"]
+                BE2["Backend Pod 2"]
+                BE3["Backend Pod 3"]
+            end
+            BackendSvc["Backend Service"]
+        end
+
+        subgraph DataLayer["Data Layer"]
+            subgraph PGStatefulSets["PostgreSQL StatefulSets"]
+                PG_Primary["Primary StatefulSet<br/>RWO Storage"]
+                PG_Replica1["Read Replica 1<br/>RWO Storage"]
+                PG_Replica2["Read Replica 2<br/>RWO Storage"]
+            end
+            PG_Svc["PostgreSQL Service<br/>Primary"]
+            PG_ReadSvc["PostgreSQL Service<br/>Read Replicas"]
+        end
+
+        subgraph Config["Configuration"]
+            ConfigMap["ConfigMap"]
+            Secret["Secret"]
+        end
+    end
+
+    subgraph GCPServices["GCP Services"]
+        ArtifactReg["Artifact Registry"]
+        LoadBalancer["Load Balancer"]
+    end
+
+    User -->|HTTP/HTTPS| LoadBalancer
+    LoadBalancer --> Ingress
+    Ingress -->|"/"| FrontendSvc
+    Ingress -->|"/api/*"| BackendSvc
+    FrontendSvc --> FE1
+    FrontendSvc --> FE2
+    BackendSvc --> BE1
+    BackendSvc --> BE2
+    BackendSvc --> BE3
+    BE1 -->|Read/Write| PG_Svc
+    BE2 -->|Read/Write| PG_Svc
+    BE3 -->|Read/Write| PG_Svc
+    PG_Svc --> PG_Primary
+    PG_Primary -.->|Streaming Replication| PG_Replica1
+    PG_Primary -.->|Streaming Replication| PG_Replica2
+    BackendSvc -.->|Read Only| PG_ReadSvc
+    PG_ReadSvc --> PG_Replica1
+    PG_ReadSvc --> PG_Replica2
+    BE1 --> ConfigMap
+    BE2 --> ConfigMap
+    BE3 --> ConfigMap
+    BE1 --> Secret
+    BE2 --> Secret
+    BE3 --> Secret
+    ArtifactReg -.->|Docker Images| FE1
+    ArtifactReg -.->|Docker Images| FE2
+    ArtifactReg -.->|Docker Images| BE1
+    ArtifactReg -.->|Docker Images| BE2
+    ArtifactReg -.->|Docker Images| BE3
+
+    style User fill:#3b82f6,stroke:#1e40af,stroke-width:2px,color:#fff
+    style LoadBalancer fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style Ingress fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff
+    style FrontendSvc fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff
+    style BackendSvc fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff
+    style PG_Svc fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    style PG_ReadSvc fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    style PG_Primary fill:#ef4444,stroke:#dc2626,stroke-width:2px,color:#fff
+    style PG_Replica1 fill:#f87171,stroke:#dc2626,stroke-width:2px,color:#fff
+    style PG_Replica2 fill:#f87171,stroke:#dc2626,stroke-width:2px,color:#fff
+    style ConfigMap fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#fff
+    style Secret fill:#ec4899,stroke:#db2777,stroke-width:2px,color:#fff
+    style ArtifactReg fill:#14b8a6,stroke:#0d9488,stroke-width:2px,color:#fff
 ```
+
+### Backend Project Structure
+
+![Backend Structure](diagrams/uptimatum-backend.png)
+
+### Frontend Project Structure
+
+![Frontend Structure](diagrams/uptimatum-frontend.png)
+
+### Database Schema
+
+![Database Schema](diagrams/database_schema.png)
 
 **Requirements:**
 
@@ -68,12 +220,12 @@ Internet → Ingress → Frontend (SolidJS) → Backend (Hono) → PostgreSQL (3
 
 This master script will:
 
-- ✅ Enable required GCP APIs
-- ✅ Create Artifact Registry
-- ✅ Create GKE cluster with autoscaling
-- ✅ Install Nginx Ingress Controller
-- ✅ Setup PostgreSQL HA cluster (3 nodes)
-- ✅ Build and deploy application
+- Enable required GCP APIs
+- Create Artifact Registry
+- Create GKE cluster with autoscaling
+- Install Nginx Ingress Controller
+- Setup PostgreSQL HA cluster (3 nodes)
+- Build and deploy application
 
 **Time:** ~15-20 minutes
 
@@ -120,7 +272,7 @@ To remove all resources:
 
 ```bash
 # Automated setup (recommended)
-./test-local.sh
+./scripts/test-local.sh
 ```
 
 This script will:
@@ -212,7 +364,7 @@ The frontend runs on `http://localhost:5173` and automatically proxies API reque
 
 ## Features
 
-### ✅ Core Features
+### Core Features
 
 - **Multi-Endpoint Monitoring**: Monitor multiple endpoints/services
 - **Real-Time Status**: Live updates every 30 seconds
@@ -226,8 +378,9 @@ The frontend runs on `http://localhost:5173` and automatically proxies API reque
 - **Status Badges**: SVG badges for README files and websites
 - **Dark Mode**: Automatic theme switching with system preference
 - **Mobile Responsive**: Fully responsive design for all devices
+- **Optimized Database Writes**: Only inserts new rows when status changes, updates timestamps otherwise
 
-### ✅ Kubernetes Features
+### Kubernetes Features
 
 - **Rolling Updates**: Zero-downtime deployments
 - **Auto-Scaling**: GKE cluster autoscaling (3-6 nodes)
@@ -235,12 +388,30 @@ The frontend runs on `http://localhost:5173` and automatically proxies API reque
 - **Resource Limits**: CPU and memory limits configured
 - **High Availability**: 3-node PostgreSQL cluster
 - **Ingress Routing**: Path-based routing for API and frontend
+- **StatefulSets**: PostgreSQL cluster with persistent storage
 
 ## Upcoming Features
 
 We're continuously improving Uptimatum. Here are some features planned for future releases:
 
-### 🔐 Authentication & Authorization
+### Infrastructure & Architecture
+
+- [ ] **Kafka Message Queue**: Event-driven architecture for better scalability and reliability
+  - [ ] Event-based database updates to prevent race conditions
+  - [ ] Decouple services from direct database writes
+  - [ ] Eliminate concurrent write conflicts (multiple backend instances updating the same row)
+  - [ ] Simplify better-auth integration with event-driven user management
+  - [ ] Enable real-time event streaming for status updates
+  - [ ] Support for event replay and audit trails
+
+**Benefits:**
+
+- **Race Condition Prevention**: Kafka ensures ordered, sequential processing of database updates
+- **Better Scalability**: Services can scale independently without database contention
+- **Simplified Architecture**: Event-driven pattern makes authentication and data flow more straightforward
+- **Reliability**: Message persistence and replay capabilities improve system resilience
+
+### Authentication & Authorization
 
 - [ ] **Better-Auth Integration**: Secure authentication system using [better-auth](https://www.better-auth.com/)
   - [ ] User registration and login
@@ -248,6 +419,7 @@ We're continuously improving Uptimatum. Here are some features planned for futur
   - [ ] Protected admin routes for status page management
   - [ ] Public access to status pages without authentication
   - [ ] Session management and secure token handling
+  - [ ] Event-driven user management via Kafka (simplifies integration)
 
 This will enable:
 
@@ -256,7 +428,7 @@ This will enable:
 - [ ] **Multi-User Support**: Multiple administrators with different permission levels
 - [ ] **API Security**: Protected API endpoints for management operations
 
-### 📊 Additional Planned Features
+### Additional Planned Features
 
 - [ ] **Email Notifications**: Alert administrators when endpoints go down
 - [ ] **Webhook Support**: Integrate with Slack, Discord, and other services
@@ -270,7 +442,7 @@ This will enable:
 Run the demo script to showcase all Kubernetes features:
 
 ```bash
-./demo.sh
+./scripts/demo.sh
 ```
 
 This demonstrates:
@@ -323,20 +495,6 @@ DELETE /api/incidents/:id         # Delete incident
 GET /badge/:slug                  # Get SVG status badge
 ```
 
-## Local Development
-
-For local development, you need to run both backend and frontend:
-
-1. **Start PostgreSQL** (or use a remote instance)
-2. **Start Backend**: `cd backend && bun run dev`
-3. **Start Frontend**: `cd frontend && bun run dev` (in another terminal)
-
-The frontend will automatically proxy API requests to the backend running on the same port.
-
-### Environment Files
-
-Both `backend/.env.example` and `frontend/.env.example` are provided as templates. Copy them to `.env` and configure as needed.
-
 ## Configuration
 
 ### Environment Variables
@@ -364,20 +522,6 @@ See `backend/.env.example` for all available variables.
 - `VITE_API_URL`: Backend API URL (optional, defaults to `http://localhost:3000`)
 
 In production, the frontend uses relative paths and nginx handles API proxying.
-
-## Cleanup
-
-To remove all resources:
-
-```bash
-./cleanup.sh
-```
-
-This will:
-
-- Delete the Kubernetes namespace (all resources)
-- Optionally delete the GKE cluster
-- Optionally delete the Artifact Registry repository
 
 ## Troubleshooting
 
@@ -408,15 +552,15 @@ If you get port conflicts, you can change the ports:
 
 ## Requirements Checklist
 
-- ✅ **2 Deployments**: Frontend (2 replicas), Backend (3 replicas)
-- ✅ **Rolling Updates**: Configured with `maxSurge` and `maxUnavailable`
-- ✅ **Multiple Services**: `frontend-service`, `backend-service`
-- ✅ **Ingress**: Nginx Ingress with path-based routing
-- ✅ **ConfigMap**: Application configuration
-- ✅ **Secret**: Database credentials
-- ✅ **PostgreSQL StatefulSet**: PostgreSQL HA cluster (1 primary + 2 read-only replicas) using Bitnami Helm chart
-- ✅ **StorageClass**: PersistentVolumeClaims for each StatefulSet pod (RWO for primary, RWO for each replica)
-- ✅ **Unique**: Self-hosted status page platform with embeds
+- **2 Deployments**: Frontend (2 replicas), Backend (3 replicas)
+- **Rolling Updates**: Configured with `maxSurge` and `maxUnavailable`
+- **Multiple Services**: `frontend-service`, `backend-service`
+- **Ingress**: Nginx Ingress with path-based routing
+- **ConfigMap**: Application configuration
+- **Secret**: Database credentials
+- **PostgreSQL StatefulSet**: PostgreSQL HA cluster (1 primary + 2 read-only replicas) using Bitnami Helm chart
+- **StorageClass**: PersistentVolumeClaims for each StatefulSet pod (RWO for primary, RWO for each replica)
+- **Unique**: Self-hosted status page platform with embeds
 
 ## Contributing
 

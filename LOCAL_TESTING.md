@@ -261,9 +261,9 @@ psql -h localhost -U uptimatum -d uptimatum -c "SELECT * FROM checks ORDER BY ch
 
 Once local testing passes:
 
-1. ✅ All endpoints work correctly
-2. ✅ Frontend displays data properly
-3. ✅ Health checker is running
-4. ✅ No errors in console/logs
+1. All endpoints work correctly
+2. Frontend displays data properly
+3. Health checker is running
+4. No errors in console/logs
 
 You're ready to deploy to Kubernetes! Follow the main README for deployment instructions.
