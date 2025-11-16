@@ -22,9 +22,13 @@ echo ""
 
 cd "$PROJECT_ROOT/backend"
 gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/uptimatum/backend:v1
+# Also tag as latest
+gcloud artifacts docker images add-tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/uptimatum/backend:v1 ${REGION}-docker.pkg.dev/${PROJECT_ID}/uptimatum/backend:latest --quiet || true
 
 cd "$PROJECT_ROOT/frontend"
 gcloud builds submit --tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/uptimatum/frontend:v1
+# Also tag as latest
+gcloud artifacts docker images add-tag ${REGION}-docker.pkg.dev/${PROJECT_ID}/uptimatum/frontend:v1 ${REGION}-docker.pkg.dev/${PROJECT_ID}/uptimatum/frontend:latest --quiet || true
 
 cd "$PROJECT_ROOT"
 
