@@ -52,10 +52,10 @@ export const checks = pgTable(
     error: text("error"),
     checkedAt: timestamp("checked_at").defaultNow().notNull(),
   },
-  (table) => ({
-    endpointIdx: index("idx_checks_endpoint").on(table.endpointId),
-    timeIdx: index("idx_checks_time").on(table.checkedAt),
-  })
+  (table) => [
+    index("idx_checks_endpoint").on(table.endpointId),
+    index("idx_checks_time").on(table.checkedAt),
+  ]
 );
 
 export const incidents = pgTable("incidents", {
