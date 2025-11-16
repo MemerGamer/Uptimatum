@@ -41,13 +41,18 @@ if [[ ! $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
 fi
 
 echo ""
-echo -e "${RED}Step 1/2: Deleting Kubernetes resources...${NC}"
+echo -e "${RED}Step 1/3: Uninstalling PostgreSQL Helm release...${NC}"
 cd "$(dirname "$0")/.."
+helm uninstall uptimatum-db --namespace uptimatum --ignore-not-found=true || true
+echo "✅ PostgreSQL Helm release uninstalled"
+
+echo ""
+echo -e "${RED}Step 2/3: Deleting Kubernetes resources...${NC}"
 kubectl delete namespace uptimatum --ignore-not-found=true || true
 echo "✅ Kubernetes resources deleted"
 
 echo ""
-echo -e "${RED}Step 2/2: Deleting GKE Cluster (optional)...${NC}"
+echo -e "${RED}Step 3/3: Deleting GKE Cluster (optional)...${NC}"
 read -p "Delete GKE cluster 'uptimatum-cluster'? (yes/N) " -r
 if [[ $REPLY =~ ^[Yy][Ee][Ss]$ ]]; then
     gcloud container clusters delete uptimatum-cluster \

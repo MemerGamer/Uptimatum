@@ -1,0 +1,67 @@
+# Bitnami PostgreSQL Helm Chart Values
+# This creates a PostgreSQL cluster with 1 primary (master) + 2 read replicas
+# Total: 3 nodes using StatefulSets
+
+# Global PostgreSQL Authentication
+global:
+  postgresql:
+    auth:
+      username: uptimatum
+      password: UptimeSecure2024
+      database: uptimatum
+
+# Primary (Master) Database Configuration
+primary:
+  persistence:
+    enabled: true
+    # Storage access mode: ReadWriteOnce (RWO) - default and required for PostgreSQL
+    # RWO ensures exclusive access to prevent data corruption
+    # If storageClass is "" or null, uses cluster's default storage class
+    # For GKE: "standard" (default), alternatives: "premium-rwo", "ssd"
+    # For AWS: "gp2" (default), alternatives: "gp3", "io2"
+    storageClass: ""  # Uses cluster default (recommended for most cases)
+    size: 10Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  # PostgreSQL configuration
+  extraEnvVars:
+    - name: POSTGRESQL_MAX_CONNECTIONS
+      value: "100"
+
+# Read Replicas Configuration
+# This creates 2 read replicas, giving you 3 total nodes (1 primary + 2 replicas)
+# Note: Read replicas also use RWO because they write WAL files and maintain their own data
+readReplicas:
+  replicaCount: 2
+  persistence:
+    enabled: true
+    # Same storage configuration as primary - RWO is required even for read replicas
+    # Each replica maintains its own copy of data via streaming replication
+    storageClass: ""  # Uses cluster default (recommended for most cases)
+    size: 10Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Metrics and Monitoring (optional)
+metrics:
+  enabled: false
+
+# Service configuration
+# Bitnami creates (with release name "uptimatum-db"):
+# - uptimatum-db-postgresql: Points to PRIMARY (read-write)
+# - uptimatum-db-postgresql-read: Points to READ REPLICAS (read-only)
+service:
+  type: ClusterIP
+  ports:
+    postgresql: 5432
+

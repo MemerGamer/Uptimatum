@@ -133,23 +133,22 @@ kubectl wait --namespace ingress-nginx \
 
 This will:
 
-- Add the CloudNativePG Helm repository
-- Install/upgrade the CloudNativePG operator (`cnpg` release in `cnpg-system`)
+- Add the Bitnami Helm repository
+- Install/upgrade PostgreSQL using Bitnami Helm chart (`uptimatum-db` release)
 - Create the `uptimatum` namespace (if missing)
-- Apply the bootstrap secret and cluster CR to provision a 3-instance PostgreSQL cluster
-- Wait for the cluster to report `Ready`
+- Deploy PostgreSQL cluster with 1 primary + 2 read replicas using StatefulSets
+- Wait for all pods to become ready
 
 **Primary-Replica Architecture:**
 
-CloudNativePG automatically sets up a master-replica architecture:
-- **1 Primary (Master)**: Handles all read-write operations
-- **2 Replicas**: Read-only nodes that sync from primary via streaming replication
-- **Automatic Services**:
-  - `uptimatum-db-rw`: Points to PRIMARY (read-write) - used by backend
-  - `uptimatum-db-ro`: Points to REPLICAS (read-only) - for read scaling
-  - `uptimatum-db-r`: Points to any replica (read-only)
+Bitnami PostgreSQL Helm chart sets up a master-replica architecture using StatefulSets:
+- **1 Primary (Master) StatefulSet**: Handles all read-write operations with RWO storage
+- **2 Read Replicas StatefulSet**: Read-only nodes that sync from primary via streaming replication with RWO storage
+- **Services**:
+  - `uptimatum-db-postgresql`: Points to PRIMARY (read-write) - used by backend
+  - `uptimatum-db-postgresql-read`: Points to READ REPLICAS (read-only) - for read scaling
 
-If the primary fails, CloudNativePG automatically promotes a replica to primary (automatic failover).
+Each StatefulSet pod has its own PersistentVolumeClaim for data persistence.
 
 ### Step 7: Build and Deploy Application
 
@@ -177,12 +176,12 @@ kubectl get pods -n uptimatum
 Expected output:
 
 ```
-NAME                        READY   STATUS    RESTARTS   AGE
-backend-xxx                  1/1     Running   0          2m
-frontend-xxx                 1/1     Running   0          2m
-uptimatum-db-1               1/1     Running   0          5m
-uptimatum-db-2               1/1     Running   0          5m
-uptimatum-db-3               1/1     Running   0          5m
+NAME                                    READY   STATUS    RESTARTS   AGE
+backend-xxx                             1/1     Running   0          2m
+frontend-xxx                            1/1     Running   0          2m
+uptimatum-db-postgresql-0               1/1     Running   0          5m
+uptimatum-db-postgresql-read-0           1/1     Running   0          5m
+uptimatum-db-postgresql-read-1           1/1     Running   0          5m
 ```
 
 ### Check Services
@@ -192,22 +191,26 @@ kubectl get svc -n uptimatum
 ```
 
 Expected services for database:
-- `uptimatum-db-rw`: Read-write service (points to primary)
-- `uptimatum-db-ro`: Read-only service (points to replicas)
-- `uptimatum-db-r`: Read service (points to any replica)
+- `uptimatum-db-postgresql`: Read-write service (points to primary StatefulSet)
+- `uptimatum-db-postgresql-read`: Read-only service (points to read replica StatefulSet)
 
 ### Verify Primary-Replica Setup
 
 ```bash
-# Check which pod is the primary
-kubectl get pods -n uptimatum -l postgresql.cnpg.io/cluster=uptimatum-db \
-  -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.labels.postgresql\.cnpg\.io/role}{"\n"}{end}'
+# Check StatefulSets
+kubectl get statefulset -n uptimatum
 
-# Check cluster status
-kubectl get cluster uptimatum-db -n uptimatum -o yaml | grep -A 5 "status:"
+# Check which pods belong to primary vs read replicas
+kubectl get pods -n uptimatum -l app.kubernetes.io/name=postgresql -o wide
+
+# Check PersistentVolumeClaims (one per StatefulSet pod)
+kubectl get pvc -n uptimatum
 ```
 
-You should see one pod with role `primary` and others with role `replica`.
+You should see:
+- 1 StatefulSet for primary (1 pod)
+- 1 StatefulSet for read replicas (2 pods)
+- 3 PersistentVolumeClaims (one for each pod)
 
 ### Check Ingress
 
@@ -242,7 +245,7 @@ All scripts are located in the `scripts/` directory:
 | ---------------- | ------------------------------------------------------- |
 | `setup.sh`       | **Master script** - Complete setup from scratch         |
 | `setup-infra.sh` | Setup GCP infrastructure (APIs, Artifact Registry, GKE) |
-| `setup-db.sh`    | Deploy CloudNativePG operator + PostgreSQL cluster      |
+| `setup-db.sh`    | Deploy Bitnami PostgreSQL cluster with StatefulSets    |
 | `deploy.sh`      | Build images and deploy to Kubernetes                   |
 | `cleanup.sh`     | **Master cleanup** - Remove all resources               |
 | `demo.sh`        | Demo presentation script                                |
@@ -297,9 +300,9 @@ gcloud artifacts repositories delete uptimatum \
 - ✅ Deployments: `backend` (3 replicas), `frontend` (2 replicas)
 - ✅ Services: `backend`, `frontend`
 - ✅ Ingress: `uptimatum-ingress`
-- ✅ CloudNativePG Cluster: `uptimatum-db` (3 instances)
+- ✅ PostgreSQL StatefulSets: `uptimatum-db-postgresql` (1 primary) + `uptimatum-db-postgresql-read` (2 replicas)
 - ✅ ConfigMap: `uptimatum-config`
-- ✅ Secrets: `uptimatum-secret`, `uptimatum-db-bootstrap`
+- ✅ Secrets: `uptimatum-secret` (database credentials managed by Helm)
 
 ### Estimated Costs
 
@@ -352,12 +355,15 @@ kubectl get all -n uptimatum
 # Check PostgreSQL pods
 kubectl get pods -n uptimatum | grep uptimatum-db
 
-# Check PostgreSQL logs
-kubectl logs -n uptimatum pod/uptimatum-db-1
+# Check PostgreSQL logs (primary)
+kubectl logs -n uptimatum pod/uptimatum-db-postgresql-0
 
-# Test connection
-kubectl exec -it -n uptimatum pod/uptimatum-db-1 -- \
-  psql -U uptimatum -d uptimatum -h uptimatum-db-rw
+# Check PostgreSQL logs (read replica)
+kubectl logs -n uptimatum pod/uptimatum-db-postgresql-read-0
+
+# Test connection to primary
+kubectl exec -it -n uptimatum pod/uptimatum-db-postgresql-0 -- \
+  psql -U uptimatum -d uptimatum -h uptimatum-db-postgresql
 ```
 
 ### Ingress IP Not Assigned
@@ -434,8 +440,8 @@ Backend environment variables are set via:
 
 PostgreSQL cluster is defined in:
 
-- **Cluster Resource:** `k8s/postgres-cluster.yaml`
-- **Bootstrap Secret:** `k8s/db-bootstrap-secret.yaml`
+- **Helm Values:** `k8s/postgresql-values.yaml`
+- **Helm Chart:** Bitnami PostgreSQL (installed via `setup-db.sh`)
 
 ### Kubernetes Manifests
 

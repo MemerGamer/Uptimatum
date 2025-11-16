@@ -32,7 +32,13 @@ echo ""
 echo "Updating manifests with PROJECT_ID..."
 # Create temporary directory for modified manifests
 TMP_DIR=$(mktemp -d)
-cp -r k8s/* "$TMP_DIR/"
+# Copy only Kubernetes manifest files (exclude Helm values files)
+cp k8s/*.yaml "$TMP_DIR/" 2>/dev/null || true
+# Remove Helm values file if it was copied
+rm -f "$TMP_DIR/postgresql-values.yaml"
+# Remove namespace.yaml - namespace is created by setup-db.sh via Helm
+# If namespace doesn't exist, it will be created by setup-db.sh first
+rm -f "$TMP_DIR/namespace.yaml"
 
 # Replace PROJECT_ID in deployment files
 for file in "$TMP_DIR"/*-deployment.yaml; do
@@ -43,7 +49,8 @@ for file in "$TMP_DIR"/*-deployment.yaml; do
 done
 
 echo "Deploying to Kubernetes..."
-kubectl apply -f "$TMP_DIR/"
+# Apply manifests (suppress warnings about namespace annotation)
+kubectl apply -f "$TMP_DIR/" 2>&1 | grep -v "missing the kubectl.kubernetes.io/last-applied-configuration annotation" || true
 
 # Cleanup temp directory
 rm -rf "$TMP_DIR"

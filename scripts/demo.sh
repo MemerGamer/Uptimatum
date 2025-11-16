@@ -8,8 +8,14 @@ echo "1. Showing pods (30s)"
 kubectl get pods -n uptimatum -o wide
 echo ""
 
-echo "2. Showing StatefulSet (30s)"
-kubectl get statefulset,pvc -n uptimatum
+echo "2. Showing StatefulSets (PostgreSQL cluster with 1 primary + 2 read replicas) (30s)"
+kubectl get statefulset -n uptimatum
+echo ""
+echo "   Showing PersistentVolumeClaims (one per StatefulSet pod):"
+kubectl get pvc -n uptimatum
+echo ""
+echo "   PostgreSQL StatefulSet details:"
+kubectl get statefulset -n uptimatum -l app.kubernetes.io/name=postgresql -o wide
 echo ""
 
 echo "3. Showing ConfigMap/Secret (30s)"
